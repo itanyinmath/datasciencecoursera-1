@@ -1,7 +1,6 @@
-## Put comments here that give an overall description of what your
-## functions do
+## The next functions are used to cached the inverse result of a matrix, such that it will only need to be calculated a single time.
 
-## Creates a special matrics, which contain a list to set/get functions for the matrix itself and its inverse
+## Creates a special matrix, which contain a list to set/get functions for the matrix itself and its inverse
 makeCacheMatrix <- function(x = matrix()) {
         ## 
         inv <- NULL
