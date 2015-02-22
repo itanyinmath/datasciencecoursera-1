@@ -1,7 +1,7 @@
 ---
-title: "Simulation of random Exponentials"
+title: "Classificaiton of Human Activity"
 author: "Cesar O. Flores Garcia"
-date: "01/23/2014"
+date: "02/21/2015"
 output: html_document
 ---
 
@@ -95,6 +95,8 @@ cmat
 As we can see, the predictions in both the training and test data are pretty good. Therefore, there is no need for cross validation, as this algorithm is already giving really good results. The accuracy in the test data set is very good with a value of
 `r cmat$overall[1]`.
 
+
+## Resulst in the validation dataset
 Now, in order to finish, we just need to make the predictions in the real validation data, for which we do not have the labels:
 
 
