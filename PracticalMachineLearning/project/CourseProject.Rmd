@@ -1,0 +1,120 @@
+---
+title: "Simulation of random Exponentials"
+author: "Cesar O. Flores Garcia"
+date: "01/23/2014"
+output: html_document
+---
+
+## Overview
+
+In this project we will train a classifier in order to predict the manner in which people do exercise.
+
+
+## Getting and cleaning the data
+
+First we need to extract the data from the main training data set. We will split this data set later on as training and test, as the original testing data set do not contain original labels.
+
+Let's start with extracting the data set from the text file.
+
+```{r, CACHE=TRUE}
+pml.training <- read.csv("pml-training.csv")
+```
+
+Some basic exploration in the data set will tell us there exist two different kind of rows,
+based in the value of the column **new_window**: 
+
+* `new_window='no'`: This is a normal row record in which the main variables are recorded.
+* `new_window='yes'`: This is a summary of the previous records in a specific time window, which includes many different statistics.
+
+Because, many of the columns apply only to the second kind of row (they are summary statistics columns), we can not use them for our classifier algorithm. Therefore, we can delete these columns, toguether with the summary rows:
+
+```{r}
+# Filter the summary rows
+dataset <- pml.training[pml.training$new_window=='no',]
+# Exclude the summary columns
+filtered_columns <- grep('^X|time|window|avg|min|max|var|std|amplitude|kurtosis|skewness',
+                         colnames(dataset))
+dataset <- dataset[, -filtered_columns]
+```
+
+Once we have a nice data set, we can subdivide it in both training and test data, which we show in the next lines of code:
+
+```{r}
+library(caret)
+inTrain <- createDataPartition(y=dataset$classe, p = 0.75, list=FALSE)
+training <- dataset[inTrain,]
+test <- dataset[-inTrain,]
+```
+
+
+## Exploratory data analysis
+
+We have a total number of `r dim(training)[2] -1` column features + 1 column class in our training data set. Those are a considerable amount of features to perform a detailed exploratory analysis of them, as the number of possible combinations that we can explore is very high. However, let's explore the first variables, and see how they may correlate with `classe` and `user_name` by coloring using these two variables. Coloring by classe, we have: 
+
+```{r, fig.width=10, fig.height = 9, cache = FALSE}
+library(GGally); library(ggplot2)
+ggpairs(data = training,
+        columns = c(1,2,3,4,54),
+       upper = list(continuous = "blank", combo = "blank"),
+       lower = list(continuous = "points", combo = "dot"),
+       alpha = 0.4,
+        colour= "classe")
+```
+
+Now, by class label:
+
+```{r,fig.width=10, fig.height = 9, cache = FALSE}
+ggpairs(data = training,
+        columns = c(1,2,3,4,54),
+       upper = list(continuous = "blank", combo = "blank"),
+       lower = list(continuous = "points", combo = "dot"),
+       alpha = 0.4,
+        colour= "user_name")
+```
+
+Something that we can extract from the last two plots, is that some correlation exist with the `user_name`. For instance, the clusters in the plot `pitch_belt` vs `roll_belt` are more
+apparent if we color by `user_name` than by `classe`. With these insights in mind, we will procede to train the algorithm.
+
+## Training: Random Forest
+
+As we see in the plots, some of the variables depends in both user and classe attributes. We tried diverses approaches, but finally decided for the random forest which gave pretty good results in our data. Another thing to mention is that using directly the funciton `randomForest` without using caret function `train` works a lot faster for our current data. Further, this kind of algorithm do not need to renormalize the data, and therefore no
+pre-processing need to be done.
+It appears that the defaults for the caret function not well defined for our data. With that in mind, we procede in the next lines of code to train our algorithm:
+
+```{r,fig.width=10, fig.height = 9, cache = TRUE}
+library(randomForest)
+label_class = 54
+model <- randomForest(classe~.,data=training)
+model
+cmat <- confusionMatrix(test[,label_class],predict(model,test))
+cmat
+```
+
+###Error rate and cross validation
+
+As we can see, the predictions in both the training and test data are pretty good. Therefore, there is no need for cross validation, as this algorithm is already giving really good results. The accuracy in the test data set is very good with a value of
+`r cmat$overall[1]`.
+
+Now, in order to finish, we just need to make the predictions in the real validation data, for which we do not have the labels:
+
+
+```{r, CACHE=TRUE}
+pml.validation <- read.csv("pml-testing.csv")
+validation <- pml.validation[pml.validation$new_window=='no',]
+# Exclude the summary columns
+validation <- validation[, -filtered_columns]
+answers<-predict(model,validation)
+answers
+```
+
+And we print the answer to files:
+```{r, CACHE=TRUE}
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+pml_write_files(answers)
+```
