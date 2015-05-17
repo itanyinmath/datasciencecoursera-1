@@ -1,7 +1,7 @@
 ---
 title: "PA1_template.Rmd"
-author: "Cesar O. Flores Garcia"
-date: "10/19/2014"
+author: "Yin Tan"
+date: "05/17/2015"
 output: html_document
 ---
 
